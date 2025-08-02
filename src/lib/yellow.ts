@@ -19,4 +19,6 @@ export const yellowWords = [
   '福利视频',
   '福利片',
   '写真热舞',
+  '人妻',
+  '伦理',
 ];
