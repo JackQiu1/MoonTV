@@ -11,8 +11,6 @@ import { checkForUpdates, CURRENT_VERSION, UpdateStatus } from '@/lib/version';
 import { useSite } from '@/components/SiteProvider';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
-import Turnstile from '@cloudflare/turnstile-react';
-
 // 版本显示组件
 function VersionDisplay() {
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
@@ -79,9 +77,7 @@ function LoginPageClient() {
   const [shouldAskUsername, setShouldAskUsername] = useState(false);
   const [enableRegister, setEnableRegister] = useState(false);
   const { siteName } = useSite();
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [turnstileError, setTurnstileError] = useState<string | null>(null);
-  
+
   // 在客户端挂载后设置配置
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -97,12 +93,6 @@ function LoginPageClient() {
     e.preventDefault();
     setError(null);
 
-    // 验证Turnstile令牌
-    if (!turnstileToken) {
-      setTurnstileError('请完成验证码验证');
-      return;
-    }
-
     if (!password || (shouldAskUsername && !username)) return;
 
     try {
@@ -113,7 +103,6 @@ function LoginPageClient() {
         body: JSON.stringify({
           password,
           ...(shouldAskUsername ? { username } : {}),
-          turnstileToken: turnstileToken // 添加Turnstile令牌
         }),
       });
 
@@ -136,13 +125,6 @@ function LoginPageClient() {
   // 处理注册逻辑
   const handleRegister = async () => {
     setError(null);
-
-    // 验证Turnstile令牌
-    if (!turnstileToken) {
-      setTurnstileError('请完成验证码验证');
-      return;
-    }
-    
     if (!password || !username) return;
 
     try {
@@ -150,7 +132,7 @@ function LoginPageClient() {
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password,  turnstileToken: turnstileToken // 添加Turnstile令牌}),
+        body: JSON.stringify({ username, password }),
       });
 
       if (res.ok) {
@@ -207,28 +189,6 @@ function LoginPageClient() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-          </div>
-
-          {/* 添加 Turnstile 验证组件 */}
-          <div className="mt-6">
-            <Turnstile
-              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ''}
-              onSuccess={(token) => {
-                // 验证成功时获取令牌
-                setTurnstileToken(token);
-                setTurnstileError(null);
-              }
-              onError={(error) => {
-                // 处理验证错误
-                setTurnstileError('验证码验证失败，请重试');
-                console.error('Turnstile error:', error);
-              }
-              refreshOnExpire={true} // 令牌过期时自动刷新
-              className="w-full"
-            />
-            {turnstileError && (
-              <p className="mt-2 text-sm text-red-600 dark:text-red-400">{turnstileError}</p>
-            )}
           </div>
 
           {error && (
