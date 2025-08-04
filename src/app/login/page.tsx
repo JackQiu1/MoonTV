@@ -11,7 +11,6 @@ import { checkForUpdates, CURRENT_VERSION, UpdateStatus } from '@/lib/version';
 import { useSite } from '@/components/SiteProvider';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
-// 添加 cloudflare/turnstile
 import Turnstile from '@cloudflare/turnstile-react';
 
 // 版本显示组件
@@ -82,7 +81,7 @@ function LoginPageClient() {
   const { siteName } = useSite();
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileError, setTurnstileError] = useState<string | null>(null);
-
+  
   // 在客户端挂载后设置配置
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -114,6 +113,7 @@ function LoginPageClient() {
         body: JSON.stringify({
           password,
           ...(shouldAskUsername ? { username } : {}),
+          turnstileToken: turnstileToken // 添加Turnstile令牌
         }),
       });
 
@@ -150,7 +150,7 @@ function LoginPageClient() {
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password,  turnstileToken: turnstileToken // 添加Turnstile令牌}),
       });
 
       if (res.ok) {
@@ -209,7 +209,7 @@ function LoginPageClient() {
             />
           </div>
 
-          {/* Turnstile 验证组件 */}
+          {/* 添加 Turnstile 验证组件 */}
           <div className="mt-6">
             <Turnstile
               siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ''}
@@ -217,12 +217,12 @@ function LoginPageClient() {
                 // 验证成功时获取令牌
                 setTurnstileToken(token);
                 setTurnstileError(null);
-              }}
+              }
               onError={(error) => {
                 // 处理验证错误
                 setTurnstileError('验证码验证失败，请重试');
                 console.error('Turnstile error:', error);
-              }}
+              }
               refreshOnExpire={true} // 令牌过期时自动刷新
               className="w-full"
             />
