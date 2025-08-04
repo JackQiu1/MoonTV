@@ -6,30 +6,6 @@ import { db } from '@/lib/db';
 
 export const runtime = 'edge';
 
-// 验证Turnstile令牌的函数
-async function verifyTurnstileToken(token: string) {
-  const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) {
-    throw new Error('Turnstile密钥未配置');
-  }
-  
-  const formData = new FormData();
-  formData.append('secret', secret);
-  formData.append('response', token);
-
-  const response = await fetch(
-    'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-    {
-      body: formData,
-      method: 'POST',
-    }
-  );
-
-  const data = await response.json();
-  
-  return data.success;
-}
-
 // 读取存储类型环境变量，默认 localstorage
 const STORAGE_TYPE =
   (process.env.NEXT_PUBLIC_STORAGE_TYPE as
@@ -113,25 +89,6 @@ export async function POST(req: NextRequest) {
         return response;
       }
 
-      // 获取请求数据并验证Turnstile令牌
-      const { username, password, turnstileToken } = await req.json();
-
-      // 验证Turnstile令牌
-      if (!turnstileToken) {
-        return NextResponse.json(
-          { error: '请完成验证码验证' },
-          { status: 400 }
-        );
-      }
-
-      const isTokenValid = await verifyTurnstileToken(turnstileToken);
-      if (!isTokenValid) {
-        return NextResponse.json(
-          { error: '验证码验证失败，请重试' },
-          { status: 400 }
-        );
-      }
-      
       const { password } = await req.json();
       if (typeof password !== 'string') {
         return NextResponse.json({ error: '密码不能为空' }, { status: 400 });
@@ -174,23 +131,6 @@ export async function POST(req: NextRequest) {
     }
     if (!password || typeof password !== 'string') {
       return NextResponse.json({ error: '密码不能为空' }, { status: 400 });
-    }
-
-    // 验证Turnstile令牌
-    const { turnstileToken } = await req.json();
-    if (!turnstileToken) {
-      return NextResponse.json(
-        { error: '请完成验证码验证' },
-        { status: 400 }
-      );
-    }
-
-    const isTokenValid = await verifyTurnstileToken(turnstileToken);
-    if (!isTokenValid) {
-      return NextResponse.json(
-        { error: '验证码验证失败，请重试' },
-        { status: 400 }
-      );
     }
 
     // 可能是站长，直接读环境变量
